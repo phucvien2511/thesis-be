@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
+const mqttService = require('./services/mqtt');
 
 // .env configuration
 require('dotenv').config()
@@ -24,6 +25,8 @@ app.use(routes);
 app.use((req, res) => {
     res.status(404).send({ url: req.originalUrl + ' not found' })
 });
+
+mqttService.startConnection();
 
 app.listen(port, () => {
     console.log('Back-end server started on port: ' + port);
