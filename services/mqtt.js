@@ -1,5 +1,6 @@
 const mqtt = require('mqtt');
-const { storeData } = require('./storeData');
+const { storeData } = require('../middlewares/storeData');
+const { verifyData } = require('../middlewares/verifyData');
 
 // Client info
 const ACCESS_TOKEN = 'BKSmartHotel_jen4BBXaJp';
@@ -27,9 +28,17 @@ const startConnection = () => {
     client.on('message', (_, message) => {
         console.log('Received data: ' + message.toString());
         const receivedData = JSON.parse(message.toString());
-        const { topic, value } = receivedData;
-        // Call API to store data
-        storeData(topic, value);
+        receivedData.forEach(dataItem => {
+            const { topic, value } = dataItem;
+            // Call API to store data
+            if (verifyData(value)) {
+                storeData(topic, value);
+            }
+            else {
+                console.log('Received invalid data: ' + value);
+            }
+
+        });
     });
 };
 
