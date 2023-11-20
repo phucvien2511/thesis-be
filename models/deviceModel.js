@@ -9,7 +9,7 @@ const Device = db.define('Device', {
         type: DataTypes.STRING,
         primaryKey: true,
         allowNull: false,
-        unique: true
+        unique: 'id',
     },
     name: {
         type: DataTypes.STRING,
@@ -53,9 +53,9 @@ const Device = db.define('Device', {
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
-    paranoid: true          // Enable soft delete
+    // paranoid: true          // Enable soft delete
 });
 
 //Sync table
-Device.sync({ alter: true });
+// Device.sync({ alter: true });
 module.exports = Device;

@@ -3,7 +3,7 @@
 // Required libraries & files
 const { DataTypes } = require('sequelize');
 const db = require('../config/database');
-const Device = require('./deviceModel');
+const Topic = require('./topicModel');
 
 const Data = db.define('Data', {
     id: {
@@ -12,29 +12,28 @@ const Data = db.define('Data', {
         autoIncrement: true
     },
     value: {
-        type: DataTypes.STRING,
+        type: DataTypes.FLOAT,
         allowNull: false,
     },
-    topic: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    deviceId: {
-        type: DataTypes.STRING,
+    topicId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
     },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
-    paranoid: true          // Enable soft delete
+    // paranoid: true          // Enable soft delete
 });
 
-// 1 data point belongs to 1 device
-Data.belongsTo(Device, {
-    foreignKey: 'deviceId'
+// 1 data point belongs to 1 topic
+// Connect topicId to Topic.id
+Data.belongsTo(Topic, {
+    foreignKey: 'topicId',
+    targetKey: 'id',
 });
+
 
 //Sync table
-Data.sync({ alter: true });
+// Data.sync({ alter: true });
 
 module.exports = Data;

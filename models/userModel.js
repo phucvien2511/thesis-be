@@ -7,13 +7,13 @@ const db = require('../config/database');
 const User = db.define('User', {
     id: {
         type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true,
-        autoIncrement: true
     },
     username: {
         type: DataTypes.STRING(16),
         allowNull: false,
-        unique: true
+        unique: 'username',
     },
     password: {
         type: DataTypes.STRING(32),
@@ -22,16 +22,11 @@ const User = db.define('User', {
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        unique: 'email',
     },
     birthday: {
         type: DataTypes.DATEONLY,
         allowNull: false
-    },
-    createDay: {
-        type: DataTypes.DATEONLY,
-        allowNull: false,
-        defaultValue: DataTypes.NOW
     },
     role: {
         type: DataTypes.ENUM('ADMIN', 'USER'),
@@ -41,11 +36,11 @@ const User = db.define('User', {
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
-    paranoid: true          // Enable soft delete
+    // paranoid: true          // Enable soft delete
 });
 
 
 //Sync table
-User.sync({ alter: true });
+// User.sync({ alter: true });
 
 module.exports = User;

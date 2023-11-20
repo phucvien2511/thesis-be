@@ -23,4 +23,6 @@ sequelize
         console.error('Error connecting database: ', error);
     });
 
+sequelize.sync({ alter: true });
+
 module.exports = sequelize;
