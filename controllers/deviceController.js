@@ -1,16 +1,30 @@
 const Device = require('../models/deviceModel');
+const { Op } = require("sequelize");
 
 // Get all devices
-const getAllDevices = async (req, res) => {
+const getDevices = async (req, res) => {
+    const { name, type, status } = req.query;
     try {
-        const devices = await Device.findAll(); // Find all devices
-        if (!devices) {
-            return res.status(404).json({ error: "No device created." });
+        const whereQuery = {};
+        if (name) {
+            whereQuery.name = { [Op.like]: `%${name}%` };
         }
-        res.status(200).json(devices);
+        if (type) {
+            whereQuery.type = type;
+        }
+        if (status) {
+            whereQuery.status = status;
+        }
+        const devices = await Device.findAll({
+            where: whereQuery
+        });
+        if (!devices) {
+            return res.status(404).json({ message: "No device created." });
+        }
+        res.status(200).json({ data: devices, message: "Success" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -20,12 +34,12 @@ const getDeviceById = async (req, res) => {
     try {
         const device = await Device.findByPk(id); // Find by primary key
         if (!device) {
-            return res.status(404).json({ error: "Device not found" });
+            return res.status(404).json({ message: "Device not found" });
         }
-        res.status(200).json(device);
+        res.status(200).json({ data: device, message: "Success" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -33,7 +47,7 @@ const getDeviceById = async (req, res) => {
 const createDevice = async (req, res) => {
     const { id, name, type, status, description, productionDate } = req.body;
     try {
-        const device = await Device.create({
+        await Device.create({
             id,
             name,
             type,
@@ -41,33 +55,34 @@ const createDevice = async (req, res) => {
             description,
             productionDate
         });
-        res.status(201).json(device);
+        res.status(201).json({ message: "Success" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 }
 
 // Update device
 const updateDevice = async (req, res) => {
     const { id } = req.params;
-    const { name, type, status, description, productionDate } = req.body;
+    const { name, type, status, description, productionDate, roomId } = req.body;
     try {
         const device = await Device.findByPk(id); // Find by primary key
         if (!device) {
-            return res.status(404).json({ error: "Device not found" });
+            return res.status(404).json({ message: "Device not found" });
         }
         await device.update({
             name,
             type,
             status,
             description,
-            productionDate
+            productionDate,
+            roomId
         });
-        res.status(200).json(device);
+        res.status(200).json({ message: "Success" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -77,18 +92,18 @@ const deleteDevice = async (req, res) => {
     try {
         const device = await Device.findByPk(id); // Find by primary key
         if (!device) {
-            return res.status(404).json({ error: "Device not found" });
+            return res.status(404).json({ message: "Device not found" });
         }
         await device.destroy();
-        res.status(200).json({ message: "Device deleted successfully" });
+        res.status(200).json({ message: "Success" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
 module.exports = {
-    getAllDevices,
+    getDevices,
     getDeviceById,
     createDevice,
     updateDevice,

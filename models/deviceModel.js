@@ -49,7 +49,10 @@ const Device = db.define('Device', {
         type: DataTypes.DATEONLY,
         allowNull: true
     },
-
+    roomId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
