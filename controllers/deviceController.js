@@ -102,6 +102,7 @@ const deleteDevice = async (req, res) => {
     }
 };
 
+
 module.exports = {
     getDevices,
     getDeviceById,

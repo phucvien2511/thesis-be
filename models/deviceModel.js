@@ -6,13 +6,13 @@ const db = require('../config/database');
 
 const Device = db.define('Device', {
     id: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(8),
         primaryKey: true,
         allowNull: false,
         unique: 'id',
     },
     name: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(32),
         allowNull: false,
     },
     type: {
@@ -28,6 +28,14 @@ const Device = db.define('Device', {
     description: {
         type: DataTypes.STRING(128),
         allowNull: true
+    },
+    productionDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
+    roomId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     },
     // deviceSize: {
     //     type: DataTypes.STRING(16),
@@ -45,14 +53,7 @@ const Device = db.define('Device', {
     //     type: DataTypes.FLOAT,
     //     allowNull: true
     // },
-    productionDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
-    },
-    roomId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
+
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt

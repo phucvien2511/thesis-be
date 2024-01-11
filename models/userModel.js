@@ -3,6 +3,7 @@
 // Required libraries & files
 const { DataTypes } = require('sequelize');
 const db = require('../config/database');
+const Room = require('./roomModel');
 
 const User = db.define('User', {
     id: {
@@ -10,35 +11,34 @@ const User = db.define('User', {
         autoIncrement: true,
         primaryKey: true,
     },
-    username: {
-        type: DataTypes.STRING(16),
-        allowNull: false,
-        unique: 'username',
-    },
-    password: {
+    name: {
         type: DataTypes.STRING(32),
-        allowNull: false
-    },
-    email: {
-        type: DataTypes.STRING,
         allowNull: false,
-        unique: 'email',
     },
-    birthday: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-    },
-    role: {
-        type: DataTypes.ENUM('ADMIN', 'USER'),
+    contractCode: {
+        type: DataTypes.CHAR(6),
         allowNull: false,
-        defaultValue: 'USER'
-    }
+    },
+    roomId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+
+    // email: {
+    //     type: DataTypes.STRING,
+    //     allowNull: false,
+    //     unique: 'email',
+    // },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
     // paranoid: true          // Enable soft delete
 });
 
+User.hasOne(Room, {
+    foreignKey: 'id',
+    sourceKey: 'roomId',
+});
 
 //Sync table
 // User.sync({ alter: true });

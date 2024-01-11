@@ -4,7 +4,7 @@
 const { DataTypes } = require('sequelize');
 const db = require('../config/database');
 const Device = require('./deviceModel');
-// const User = require('./userModel');
+const Topic = require('./topicModel');
 
 const Room = db.define('Room', {
     id: {
@@ -23,7 +23,7 @@ const Room = db.define('Room', {
         defaultValue: 'AVAILABLE',
     },
     cardId: {
-        type: DataTypes.STRING(8),
+        type: DataTypes.CHAR(8),
         unique: 'cardId',
         allowNull: true,
     }
@@ -39,14 +39,5 @@ Room.hasMany(Device, {
     foreignKey: 'roomId',
     sourceKey: 'id',
 });
-
-
-
-// 1 room can only have 1 owner 
-// Room.belongsTo(User, {
-//     foreignKey: 'ownerId',
-//     targetKey: 'id',
-// });
-
 
 module.exports = Room;

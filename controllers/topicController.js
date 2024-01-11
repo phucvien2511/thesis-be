@@ -55,13 +55,13 @@ const getTopicByName = async (req, res) => {
 // Update topic
 const updateTopic = async (req, res) => {
     const { topicName } = req.params;
-    const { description } = req.body;
+    const { name, description } = req.body;
     try {
         const topic = await Topic.findByPk({ name: topicName });
         if (!topic) {
             return res.status(404).json({ message: "Topic not found" });
         }
-        await topic.update({ description });
+        await topic.update({ name, description });
         res.status(200).json({ message: "Success" });
     } catch (error) {
         res.status(500).json({ message: error.message });

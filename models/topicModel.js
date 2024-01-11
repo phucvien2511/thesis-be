@@ -3,8 +3,7 @@
 // Required libraries & files
 const { DataTypes, Model } = require('sequelize');
 const db = require('../config/database');
-const Data = require('./dataModel');
-const User = require('./userModel');
+const Room = require('./roomModel');
 
 const Topic = db.define('Topic', {
     id: {
@@ -22,16 +21,22 @@ const Topic = db.define('Topic', {
         type: DataTypes.STRING(128),
         allowNull: true,
     },
+    roomId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
     // paranoid: true          // Enable soft delete
 });
 
-// 1 topic belong to 1 user
-Topic.belongsTo(User, { foreignKey: 'id' });
+// 1 topic belong to 1 room
+Topic.belongsTo(Room, {
+    foreignKey: 'roomId',
+});
 
 // Sync table
-// Topic.sync({ alter: true });
+//Topic.sync({ alter: true });
 
 module.exports = Topic;

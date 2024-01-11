@@ -6,6 +6,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
 const mqttService = require('./services/mqtt');
+const getDailyLog = require('./services/dailyLog');
 
 // .env configuration
 require('dotenv').config()
@@ -31,4 +32,6 @@ mqttService.startConnection();
 app.listen(port, () => {
     console.log('Back-end server started on port: ' + port);
 });
+
+//setInterval(getDailyLog, 10000);
 

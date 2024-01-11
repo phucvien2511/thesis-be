@@ -12,7 +12,7 @@ const Data = db.define('Data', {
         autoIncrement: true
     },
     value: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.STRING,
         allowNull: false,
     },
     topicId: {
