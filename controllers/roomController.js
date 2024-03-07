@@ -69,7 +69,7 @@ const scanningRfid = async (req, res) => {
         //     'module': 'rfid',
         //     'cardId': cardId
         // });
-        publishData('COMMAND', cardId);
+        publishData('SCAN-RFID', cardId);
         let result = -1;
         // // Know when there is a response from mqtt
         myEvent.once('room-access', (value) => {
