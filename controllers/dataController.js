@@ -2,6 +2,7 @@ const Data = require('../models/dataModel');
 const Topic = require('../models/topicModel');
 // Get all data from topic
 const { Op } = require("sequelize");
+const { publishData } = require('../services/mqtt');
 
 const getAllData = async (req, res) => {
     const { topicName } = req.params;
@@ -53,7 +54,12 @@ const getLatestData = async (req, res) => {
         const whereQuery = {
             topicId: topic.id,
         };
-        const data = await Data.findOne({ where: whereQuery, order: [['createdAt', 'DESC']] }); // Find latest data from topic
+        const data = await Data.findOne({
+            where: {
+                topicId: topic.id
+            },
+            order: [['createdAt', 'DESC']] // Find latest data from topic
+        });
         if (!data) {
             return res.status(404).json({ message: "No data created." });
         }
@@ -90,6 +96,9 @@ const createData = async (req, res) => {
 
         if (!topic) {
             return res.status(404).json({ message: "Topic not found" });
+        }
+        if (topicName === 'light') {
+            await publishData('LIGHT-CONTROL', value);
         }
         await Data.create({
             value,
