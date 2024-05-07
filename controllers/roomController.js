@@ -2,12 +2,19 @@ const Room = require('../models/roomModel');
 const { publishData } = require('../services/mqtt');
 const myEvent = require('../services/eventGenerator');
 const createRoom = async (req, res) => {
-    const { id, name, description } = req.body;
+    const { name, accessKey } = req.body;
     try {
+        const room = await Room.findOne({
+            where: {
+                RoomName: name
+            }
+        });
+        if (room) {
+            return res.status(400).json({ message: "Room already exists" });
+        }
         await Room.create({
-            id,
-            name,
-            description
+            RoomName: name,
+            AccessKey: accessKey
         });
         res.status(201).json({ message: "Success" });
     } catch (error) {
@@ -21,7 +28,7 @@ const getRoomById = async (req, res) => {
     try {
         const room = await Room.findOne({
             where: {
-                id
+                RoomID: id,
             }
         });
         if (!room) {
@@ -34,18 +41,17 @@ const getRoomById = async (req, res) => {
     }
 };
 
-const updateRoom = async (req, res) => {
+const updateRoomData = async (req, res) => {
     const { id } = req.params;
-    const { name, description, cardId } = req.body;
+    const { name, accessKey } = req.body;
     try {
         const room = await Room.findByPk(id); // Find by primary key
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
         await room.update({
-            name,
-            description,
-            cardId
+            RoomName: name,
+            AccessKey: accessKey
         });
         res.status(200).json({ message: "Success" });
     } catch (error) {
@@ -111,6 +117,6 @@ const scanningRfid = async (req, res) => {
 module.exports = {
     createRoom,
     getRoomById,
-    updateRoom,
+    updateRoomData,
     scanningRfid
 };

@@ -10,7 +10,6 @@ const createDatabase = async () => {
         password: process.env.DB_PASS,
     }).then((connection) => {
         connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME};`);
-        console.log('Database created successfully.')
     })
 };
 
@@ -30,10 +29,13 @@ createDatabase().then(() => {
     sequelize
         .authenticate()
         .then(() => {
-            console.log('Database connected successfully.');
+            console.log('-> DATABASE CONNECTION: SUCCESS.');
+            console.log('------------------------------------------------------');
         })
         .catch((error) => {
-            console.error('Error connecting database: ', error);
+            console.log('-> DATABASE CONNECTION: FAILED.');
+            console.log('-> ERROR: ', error);
+            console.log('------------------------------------------------------');
         });
     sequelize.sync();
 });

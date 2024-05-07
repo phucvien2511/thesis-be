@@ -2,11 +2,11 @@ const myEvent = require("./eventGenerator");
 
 module.exports = (io, socket) => {
     const handleDisconnect = () => {
-        console.log('A user disconnected');
+        console.log('-> SOCKET: A user disconnected.');
         myEvent.removeAllListeners('receive_data');
     };
     const handleReceiveData = data => {
-        console.log('Data received:', data);
+        console.log('-> SOCKET: Data received: ' + data + '.');
         io.emit('receive_data', data.topic, data.value, Date.now());
     }
     myEvent.on('receive_data', handleReceiveData);

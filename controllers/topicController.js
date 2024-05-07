@@ -5,15 +5,19 @@ const createTopic = async (req, res) => {
     const { name, description } = req.body;
     try {
         // Check if a topic with the same name already exists
-        const existedTopic = await Topic.findOne({ where: { name } });
+        const existedTopic = await Topic.findOne({
+            where: {
+                TopicName: name
+            }
+        });
         if (existedTopic) {
             return res.status(400).json({ message: "Topic already exists" });
         }
 
         // Create a new topic
         await Topic.create({
-            name,
-            description
+            TopicName: name,
+            TopicDescription: description
         });
 
         res.status(201).json({ message: "Success" });
@@ -40,8 +44,9 @@ const getTopics = async (req, res) => {
 // Get topic by name
 const getTopicByName = async (req, res) => {
     const { topicName } = req.params;
+    console.log(topicName);
     try {
-        const topic = await Topic.findOne({ where: { name: topicName } });
+        const topic = await Topic.findOne({ where: { TopicName: topicName } });
         if (!topic) {
             return res.status(404).json({ message: "Topic not found" });
         }

@@ -1,13 +1,14 @@
 const Data = require('../models/dataModel');
 const Topic = require('../models/topicModel');
 // Get all data from topic
-const { Op } = require("sequelize");
+const { Op, literal } = require("sequelize");
 const { publishData } = require('../services/mqtt');
 const Device = require('../models/deviceModel');
+const { EthCrypto_EncryptData, EthCrypto_DecryptData } = require('../services/dataHandler');
 
 const getAllData = async (req, res) => {
     const { topic } = req.params;
-    const { min, max } = req.query;
+    const { max, min } = req.query;
     try {
         const topicData = await Topic.findOne({
             where: {
@@ -18,37 +19,57 @@ const getAllData = async (req, res) => {
         if (!topicData) {
             return res.status(404).json({ message: "Topic not found" });
         }
-        // Find the device belongs to the topic
-        const deviceData = await Device.findOne({
+
+        const deviceData = await Device.findAll({
             where: {
                 TopicID: topicData.TopicID
             }
         });
-        const whereQuery = {
-            DeviceCode: deviceData.DeviceCode,
-        };
-        if (minValue) {
-            whereQuery.Value = {
-                [Op.gte]: min   // >= min
+        let resData = null;
+        for (const device of deviceData) {
+            const dataQuery = {
+                DeviceCode: device.DeviceCode,
             };
-        }
-        if (maxValue) {
-            whereQuery.Value = {
-                ...whereQuery.Value,
-                [Op.lte]: max   // <= max
-            };
-        }
+            // if (max) {
+            //     // Cast the dataQuery.Value to number
+            //     dataQuery[Op.or].push(
+            //         literal(`CAST(Value AS FLOAT) <= ${max}`),
+            //     )
 
-        const resData = await Data.findAll({
-            where: whereQuery,
-            attributes: {
-                exclude: ['DeviceCode']
+            // }
+            // if (min) {
+            //     dataQuery[Op.or].push(
+            //         literal(`CAST(Value AS FLOAT) >= ${min}`),
+            //     )
+            // }
+
+            resData = await Data.findAll({
+                where: dataQuery,
+            });
+            if (!resData) {
+                return res.status(404).json({ message: "No data found." });
             }
-        });
-        if (!resData) {
-            return res.status(404).json({ message: "No data found." });
         }
-        res.status(200).json({ data: resData, message: "Success" });
+        // Format response 
+        const formatResData = await Promise.all(resData.map(async (data) => {
+            if (max || min) {
+                const decryptedValue = (await EthCrypto_DecryptData(data.Value)).split(",")[1];
+
+                if ((max && decryptedValue <= max) || (min && decryptedValue >= min)) {
+                    return {
+                        value: decryptedValue,
+                        deviceCode: data.DeviceCode,
+                        createdAt: data.createdAt
+                    }
+                }
+            }
+        }));
+        //Remove null value
+        const index = formatResData.indexOf(null);
+        if (index > -1) {
+            formatResData.splice(index, 1);
+        }
+        res.status(200).json({ data: formatResData, message: "Success" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -59,6 +80,7 @@ const getAllData = async (req, res) => {
 const getLatestData = async (req, res) => {
     const { topic } = req.params;
     try {
+        // Find the topic data
         const topicData = await Topic.findOne({
             where: {
                 TopicName: topic
@@ -69,25 +91,35 @@ const getLatestData = async (req, res) => {
             return res.status(404).json({ message: "Topic not found" });
         }
 
-        // Find the device belongs to the topic
-        const deviceData = await Device.findOne({
+        // Find all devices belongs to the topic
+        const deviceData = await Device.findAll({
             where: {
                 TopicID: topicData.TopicID
             }
         });
-
-        const resData = await Data.findOne({
-            where: {
-                DeviceCode: deviceData.DeviceCode
-            },
-            order: [
-                ['createdAt', 'DESC']  // Find latest data 
-            ]
-        });
+        let resData = null;
+        for (const device of deviceData) {
+            const tempResData = await Data.findOne({
+                where: {
+                    DeviceCode: device.DeviceCode,
+                },
+                order: [
+                    ['createdAt', 'DESC']  // Find latest data 
+                ]
+            });
+            if (!resData || tempResData.createdAt > resData.createdAt) {
+                resData = tempResData;
+            }
+        }
         if (!resData) {
             return res.status(404).json({ message: "No data created." });
         }
-        res.status(200).json({ data: resData, message: "Success" });
+        const formatResData = {
+            value: (await EthCrypto_DecryptData(resData.Value)).split(",")[1],
+            deviceCode: resData.DeviceCode,
+            createdAt: resData.createdAt
+        }
+        res.status(200).json({ data: formatResData, message: "Success" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -133,8 +165,10 @@ const createData = async (req, res) => {
                 TopicID: topicData.TopicID
             }
         });
+        let prepareData = [deviceData.DeviceCode, value, Date.now()];
+        prepareData = await EthCrypto_EncryptData(prepareData.toString());
         await Data.create({
-            Value: value,
+            Value: prepareData,
             DeviceCode: deviceData.DeviceCode,
         });
         res.status(201).json({ message: "Success" });
@@ -160,43 +194,49 @@ const getDataForChart = async (req, res) => {
             return res.status(404).json({ message: "Topic not found" });
         }
 
-        const deviceData = await Device.findOne({
+        const deviceData = await Device.findAll({
             where: {
                 TopicID: topicData.TopicID
             }
         });
-        const whereQuery = {
-            DeviceCode: deviceData.DeviceCode,
-        };
-        if (startTime) {
-            whereQuery.createdAt = {
-                [Op.gte]: Date.parse(startTime)
+        let resData = null;
+        for (const device of deviceData) {
+            const chartDataQuery = {
+                DeviceCode: device.DeviceCode,
             };
-        }
-        if (endTime) {
-            whereQuery.createdAt = {
-                ...whereQuery.createdAt,
-                [Op.lte]: Date.parse(endTime)
-            };
-        }
-        // If there is startTime or endTime, ignore hours
-        if (hours && !startTime && !endTime) {
-            whereQuery.createdAt = {
-                [Op.gte]: Date.now() - (hours * 3600 * 1000)
-            };
-        }
-        const resData = await Data.findAll({
-            where: whereQuery,
-        });
-        if (!resData) {
-            return res.status(404).json({ message: "No data found." });
+            if (startTime) {
+                chartDataQuery.createdAt = {
+                    [Op.gte]: Date.parse(startTime)
+                };
+            }
+            if (endTime) {
+                chartDataQuery.createdAt = {
+                    ...chartDataQuery.createdAt,
+                    [Op.lte]: Date.parse(endTime)
+                };
+            }
+            // If there is startTime or endTime, ignore hours
+            if (hours && !startTime && !endTime) {
+                chartDataQuery.createdAt = {
+                    [Op.gte]: Date.now() - (hours * 3600 * 1000)
+                };
+            }
+            resData = await Data.findAll({
+                where: chartDataQuery,
+            });
+            if (!resData) {
+                return res.status(404).json({ message: "No data found." });
+            }
         }
         // Format response 
-        const formattedResData = resData.map(item => ({
-            value: item.Value,
-            createdAt: item.createdAt
+        const formatResData = await Promise.all(resData.map(async (data) => {
+            return {
+                value: (await EthCrypto_DecryptData(data.Value)).split(",")[1],
+                deviceCode: data.DeviceCode,
+                createdAt: data.createdAt
+            }
         }));
-        res.status(200).json({ data: formattedResData, message: "Success" });
+        res.status(200).json({ data: formatResData, message: "Success" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });

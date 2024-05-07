@@ -6,11 +6,14 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
 const mqttService = require('./services/mqtt');
-const getDailyLog = require('./services/dailyLog');
+// const getDailyLog = require('./services/dailyLog');
 const socketHandler = require('./services/socketHandler');
+const { getLog } = require('./services/dataHandler');
+const main = require('./services/blockchainEvent');
+const handleBlockchainEvent = require('./services/blockchainEvent');
 
 // .env configuration
-require('dotenv').config()
+require('dotenv').config();
 const port = process.env.PORT || 8000;
 
 // Define express app
@@ -30,7 +33,8 @@ app.use((req, res) => {
 
 
 const server = app.listen(port, () => {
-    console.log('Back-end server started on port: ' + port);
+    console.log('-> NODE SERVER: STARTED SUCCESSFULLY AT PORT ' + port + '.');
+    console.log('------------------------------------------------------');
 });
 
 mqttService.startConnection();
@@ -42,11 +46,13 @@ const io = require('socket.io')(server, {
 });
 
 const onConnection = (socket) => {
-    console.log('New client connected');
+    console.log('-> SOCKET: New client connected');
     socketHandler(io, socket);
 
 };
 
 io.on('connection', onConnection);
-//setInterval(getDailyLog, 10000);
-
+// setInterval(async () => {
+//     console.log('-> Get log result: ', await Promise.resolve(getLog(1)))
+// }, 5000);
+handleBlockchainEvent();

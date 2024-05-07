@@ -18,6 +18,7 @@ const Device = db.define('Device', {
         type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
+        unique: 'DeviceCode',
     },
 }, {
     // freezeTableName: true,  // Force table name = model name

@@ -26,9 +26,10 @@ const startConnection = () => {
 
     // Check connection
     client.on('connect', () => {
-        console.log('Connected to MQTT broker ' + MQTT_BROKER);
+        console.log('-> CONNECTED TO MQTT BROKER AT ' + MQTT_BROKER + '.');
         client.subscribe(MQTT_TOPIC);
-        console.log('Subscribed to topic ' + MQTT_TOPIC);
+        console.log('-> SUBSCRIBED TO TOPIC ' + MQTT_TOPIC + '.');
+        console.log('------------------------------------------------------');
     });
 
     let isFirstMessageRemoved = false;
@@ -42,35 +43,44 @@ const startConnection = () => {
         }
 
         let receivedMessage = JSON.parse(message.toString());
-        console.log('Received message:', message.toString());
+        console.log('-> Received message from topic: ', message.toString());
+        //console.log('-> Message type: ', receivedMessage.type);
+        // if (!Array.isArray(receivedMessage)) {
+        //     // Make it into an array
+        //     receivedMessage = [receivedMessage];
+        // }
 
-        if (!Array.isArray(receivedMessage)) {
-            // Make it into an array
-            receivedMessage = [receivedMessage];
-        }
-
-        receivedMessage.forEach(dataItem => {
-            const { topic, value } = dataItem;
-            // Call API to store data
-            // if (topic !== 'room-access') {
-            //     storeData(topic, value);
-            // } else {
-            //     storeCardId(value);
-            //     console.log("Store card id");
-            // }
-
-            // if (verifyData(value)) {
-            //     storeData(topic, value);
-            // }
-            if (topic === 'room-access') {
-                // myEvent.emit('room-access', value);
-            }
-            else {
+        if (receivedMessage.type === 'publish') {
+            console.log('-> Received data array: ', receivedMessage.data);
+            receivedMessage.data.forEach(item => {
+                const { topic, value } = item;
+                //console.log('-> Received data: ', { topic, value })
                 storeData(topic, value);
-                console.log('Emit receive_data event');
                 myEvent.emit('receive_data', { topic, value });
-            }
-        });
+            });
+        }
+        // receivedMessage.forEach(dataItem => {
+        //     const { topic, value } = dataItem;
+        //     // Call API to store data
+        //     // if (topic !== 'room-access') {
+        //     //     storeData(topic, value);
+        //     // } else {
+        //     //     storeCardId(value);
+        //     //     console.log("Store card id");
+        //     // }
+
+        //     // if (verifyData(value)) {
+        //     //     storeData(topic, value);
+        //     // }
+        //     if (topic === 'room-access') {
+        //         // myEvent.emit('room-access', value);
+        //     }
+        //     else {
+        //         storeData(topic, value);
+        //         // console.log('Emit receive_data event');
+        //         myEvent.emit('receive_data', { topic, value });
+        //     }
+        // });
     });
 };
 
@@ -83,9 +93,12 @@ const prepareJsonToPublish = (type, value) => {
 }
 const publishData = (type, payload) => {
     if (client) {
-        client.publish(MQTT_TOPIC, prepareJsonToPublish(type, payload));
+        const publishData = prepareJsonToPublish(type, payload);
+        client.publish(MQTT_TOPIC, publishData);
+        console.log('-> Published to: ' + MQTT_TOPIC + '.');
+        console.log('-> Payload: ' + publishData + '.');
     } else {
-        console.log('Client is not connected.');
+        console.log('-> Publish failed: Client is not connected.');
     }
 };
 
