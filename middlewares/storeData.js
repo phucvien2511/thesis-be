@@ -14,7 +14,7 @@ const storeData = (topic, value) => {
             'Content-Type': 'application/json'
         }
     };
-    console.log('Value: ', value);
+    //console.log('Value: ', value);
     const req = http.request(options, () => { });
     req.on('error', error => {
         console.error(error);

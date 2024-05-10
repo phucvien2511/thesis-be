@@ -51,25 +51,39 @@ const getAllData = async (req, res) => {
             }
         }
         // Format response 
+        let result = [];
         const formatResData = await Promise.all(resData.map(async (data) => {
-            if (max || min) {
-                const decryptedValue = (await EthCrypto_DecryptData(data.Value)).split(",")[1];
+            const decryptedValue = (await EthCrypto_DecryptData(data.Value)).split(",")[1];
 
-                if ((max && decryptedValue <= max) || (min && decryptedValue >= min)) {
-                    return {
+            if (max) {
+                if (decryptedValue <= max) {
+                    result.push({
                         value: decryptedValue,
                         deviceCode: data.DeviceCode,
                         createdAt: data.createdAt
-                    }
+                    });
                 }
             }
+            if (min) {
+                if (decryptedValue >= min) {
+                    result.push({
+                        value: decryptedValue,
+                        deviceCode: data.DeviceCode,
+                        createdAt: data.createdAt
+                    });
+                }
+            }
+            if (!max && !min) {
+                result.push({
+                    value: decryptedValue,
+                    deviceCode: data.DeviceCode,
+                    createdAt: data.createdAt
+                });
+            }
+
         }));
-        //Remove null value
-        const index = formatResData.indexOf(null);
-        if (index > -1) {
-            formatResData.splice(index, 1);
-        }
-        res.status(200).json({ data: formatResData, message: "Success" });
+
+        res.status(200).json({ data: result, message: "Success" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -171,6 +185,8 @@ const createData = async (req, res) => {
             Value: prepareData,
             DeviceCode: deviceData.DeviceCode,
         });
+        // console.log('Data created: ', prepareData.toString(), ' for device: ', deviceData.DeviceCode);
+        // console.log('Decrypted: ', await EthCrypto_DecryptData(prepareData));
         res.status(201).json({ message: "Success" });
     }
     catch (error) {
