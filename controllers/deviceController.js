@@ -57,8 +57,8 @@ const createDevice = async (req, res) => {
                     TopicName: topic,
                 }
             })
-            if (!topicQuery) {
-                return res.status(404).json({ message: `Topic ${topic} not exists` });
+            if (!topicQuery || !topics) {
+                return res.status(404).json({ message: `Topic not exists` });
             }
             await Device.create({
                 DeviceName: name,
