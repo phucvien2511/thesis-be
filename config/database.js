@@ -37,7 +37,7 @@ createDatabase().then(() => {
             console.log('-> ERROR: ', error);
             console.log('------------------------------------------------------');
         });
-    sequelize.sync();
+    sequelize.sync({ alter: true });
 });
 
 
