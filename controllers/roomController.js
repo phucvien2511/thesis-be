@@ -1,8 +1,8 @@
 const Room = require('../models/roomModel');
-const { publishData } = require('../services/mqtt');
+const { publishData, publishToMqtt } = require('../services/mqtt');
 const myEvent = require('../services/eventGenerator');
 const createRoom = async (req, res) => {
-    const { name, accessKey } = req.body;
+    const { name, accessKey, description, status } = req.body;
     try {
         const room = await Room.findOne({
             where: {
@@ -14,7 +14,9 @@ const createRoom = async (req, res) => {
         }
         await Room.create({
             RoomName: name,
-            AccessKey: accessKey
+            AccessKey: accessKey,
+            RoomDescription: description,
+            RoomStatus: status
         });
         res.status(201).json({ message: "Success" });
     } catch (error) {
@@ -22,7 +24,20 @@ const createRoom = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
-
+const getRooms = async (req, res) => {
+    const { status } = req.query;
+    try {
+        const rooms = await Room.findAll();
+        if (status) {
+            const filterRooms = rooms.filter((room) => room.RoomStatus.toLowerCase() === status.toLowerCase());
+            return res.status(200).json({ data: filterRooms, message: "Success" });
+        }
+        res.status(200).json({ data: rooms, message: "Success" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+};
 const getRoomById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -43,7 +58,7 @@ const getRoomById = async (req, res) => {
 
 const updateRoomData = async (req, res) => {
     const { id } = req.params;
-    const { name, accessKey } = req.body;
+    const { name, accessKey, description } = req.body;
     try {
         const room = await Room.findByPk(id); // Find by primary key
         if (!room) {
@@ -51,7 +66,8 @@ const updateRoomData = async (req, res) => {
         }
         await room.update({
             RoomName: name,
-            AccessKey: accessKey
+            AccessKey: accessKey,
+            RoomDescription: description,
         });
         res.status(200).json({ message: "Success" });
     } catch (error) {
@@ -60,7 +76,38 @@ const updateRoomData = async (req, res) => {
     }
 };
 
-const scanningRfid = async (req, res) => {
+const registerRfid = async (req, res) => {
+    const { roomId, ownerId } = req.body;
+    try {
+        const room = await Room.findByPk(roomId);
+        if (!room) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        // Update ownerId in room
+        await room.update({
+            AccessKey: ownerId,
+        });
+        const prepareJson = {
+            type: 'command',
+            data: [
+                {
+                    deviceName: "RFID",
+                    roomId: roomId,
+                    action: "WRITE_RFID_CARD",
+                    value: ownerId
+                }
+            ]
+        }
+        publishToMqtt(JSON.stringify(prepareJson));
+        res.status(200).json({ message: "Success" });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+}
+
+const scanRfid = async (req, res) => {
     const { roomId } = req.body;
     try {
         const room = await Room.findByPk(roomId);
@@ -75,7 +122,17 @@ const scanningRfid = async (req, res) => {
         //     'module': 'rfid',
         //     'cardId': cardId
         // });
-        publishData('SCAN-RFID', cardId);
+        const prepareJson = {
+            type: 'command',
+            data: [
+                {
+                    deviceName: "RFID",
+                    roomId: roomId,
+                    action: "SCAN_RFID_CARD",
+                }
+            ]
+        }
+        publishToMqtt(JSON.stringify(prepareJson));
         let result = -1;
         // // Know when there is a response from mqtt
         myEvent.once('room-access', (value) => {
@@ -116,7 +173,9 @@ const scanningRfid = async (req, res) => {
 
 module.exports = {
     createRoom,
+    getRooms,
     getRoomById,
     updateRoomData,
-    scanningRfid
+    registerRfid,
+    scanRfid
 };

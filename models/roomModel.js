@@ -22,10 +22,14 @@ const Room = db.define('Room', {
         defaultValue: 'AVAILABLE',
     },
     AccessKey: {
-        type: DataTypes.STRING(10),
+        type: DataTypes.STRING(100),
         allowNull: true,
         unique: 'accessKey',
-    }
+    },
+    RoomDescription: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+    },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt

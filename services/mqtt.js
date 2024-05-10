@@ -16,6 +16,7 @@ let client = null;
 let MQTT_PASSWORD = process.env.MQTT_PASSWORD;
 let MQTT_USERNAME = process.env.MQTT_USERNAME;
 let MQTT_TOPIC = process.env.MQTT_TOPIC + '/' + process.env.MAC_ADDRESS + '/+';
+let PUBLISH_TOPIC = process.env.MQTT_TOPIC + '/' + process.env.MAC_ADDRESS + '/test';
 let MQTT_BROKER = process.env.MQTT_BROKER;
 // Connect to MQTT broker
 const startConnection = () => {
@@ -44,14 +45,13 @@ const startConnection = () => {
 
         let receivedMessage = JSON.parse(message.toString());
         console.log('-> Received message from topic: ', message.toString());
-        //console.log('-> Message type: ', receivedMessage.type);
         // if (!Array.isArray(receivedMessage)) {
         //     // Make it into an array
         //     receivedMessage = [receivedMessage];
         // }
 
         if (receivedMessage.type === 'publish') {
-            console.log('-> Received data array: ', receivedMessage.data);
+            //console.log('-> Received data array: ', receivedMessage.data);
             receivedMessage.data.forEach(item => {
                 const { topic, value } = item;
                 //console.log('-> Received data: ', { topic, value })
@@ -94,13 +94,22 @@ const prepareJsonToPublish = (type, value) => {
 const publishData = (type, payload) => {
     if (client) {
         const publishData = prepareJsonToPublish(type, payload);
-        client.publish(MQTT_TOPIC, publishData);
-        console.log('-> Published to: ' + MQTT_TOPIC + '.');
+        client.publish(PUBLISH_TOPIC, publishData);
+        console.log('-> Published to: ' + PUBLISH_TOPIC + '.');
         console.log('-> Payload: ' + publishData + '.');
     } else {
         console.log('-> Publish failed: Client is not connected.');
     }
 };
 
+const publishToMqtt = (payload) => {
+    if (client) {
+        client.publish(PUBLISH_TOPIC, payload);
+        console.log('-> Published to: ' + PUBLISH_TOPIC + '.');
+        console.log('-> Payload: ' + payload + '.');
+    } else {
+        console.log('-> Publish failed: Client is not connected.');
+    }
+};
 
-module.exports = { startConnection, publishData };
+module.exports = { startConnection, publishData, publishToMqtt };
