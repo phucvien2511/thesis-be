@@ -3,15 +3,7 @@ const { storeData, storeCardId } = require('../middlewares/storeData');
 // const { verifyData } = require('../middlewares/verifyData');
 const myEvent = require('./eventGenerator');
 require('dotenv').config();
-// const selectAdafruit = 0;
 
-// // mqttserver.tk
-// if (!selectAdafruit) {
-//     ACCESS_TOKEN = 'BKSmartHotel_jen4BBXaJp';
-//     USERNAME = 'bksmarthotel';
-//     TOPIC = '/bk/smarthotel/devicemonitoring';
-//     MQTT_BROKER = 'mqtt://mqttserver.tk:1883';
-// }
 let client = null;
 let MQTT_PASSWORD = process.env.MQTT_PASSWORD;
 let MQTT_USERNAME = process.env.MQTT_USERNAME;
@@ -57,6 +49,13 @@ const startConnection = () => {
                 //console.log('-> Received data: ', { topic, value })
                 storeData(topic, value);
                 myEvent.emit('receive_data', { topic, value });
+            });
+        }
+        else if (receivedMessage.type === 'response') {
+            receivedMessage.data.forEach(item => {
+                if (item.to === 'room_access_key') {
+                    myEvent.emit('room_access_response', item.status);
+                }
             });
         }
         // receivedMessage.forEach(dataItem => {
@@ -111,5 +110,6 @@ const publishToMqtt = (payload) => {
         console.log('-> Publish failed: Client is not connected.');
     }
 };
+
 
 module.exports = { startConnection, publishData, publishToMqtt };

@@ -83,10 +83,6 @@ const registerRfid = async (req, res) => {
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
-        // Update ownerId in room
-        await room.update({
-            AccessKey: ownerId,
-        });
         const prepareJson = {
             type: 'command',
             data: [
@@ -99,7 +95,29 @@ const registerRfid = async (req, res) => {
             ]
         }
         publishToMqtt(JSON.stringify(prepareJson));
-        res.status(200).json({ message: "Success" });
+        // waiting for emit room_access_response
+        // Wrap the event listener in a Promise
+        let resultPromise = new Promise((resolve, reject) => {
+            myEvent.once('room_access_response', (value) => {
+                console.log('Room access event:', value);
+                resolve(value);  // Resolve the Promise with the value
+            });
+
+        });
+        // myEvent.removeAllListeners('room_access_response');
+        // Wait for the Promise to resolve with the result
+        let result = await resultPromise;
+
+        // Now you can check the result and update the room
+        if (result === 1) {
+            // Update ownerId in room
+            await room.update({
+                AccessKey: ownerId,
+            });
+        }
+
+        res.status(200).json({ data: { result }, message: "Success" });
+
     }
     catch (error) {
         console.error(error);
@@ -133,14 +151,7 @@ const scanRfid = async (req, res) => {
             ]
         }
         publishToMqtt(JSON.stringify(prepareJson));
-        let result = -1;
-        // // Know when there is a response from mqtt
-        myEvent.once('room-access', (value) => {
-            result = value;
-            console.log('Room access event: ', value);
-            res.status(200).json({ data: result, message: "Success" });
 
-        });
         // //Delay 10 seconds to wait for response
         // setTimeout(() => {
         //     // Remove listener

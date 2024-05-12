@@ -1,4 +1,4 @@
-const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
+const { ThirdwebSDK, encodeConstructorParamsForImplementation } = require("@thirdweb-dev/sdk");
 const { CryptoJS_HashData, getLog, CryptoJS_EncryptData } = require("./dataHandler");
 require('dotenv').config();
 // Get private key and contract address from environment variables
@@ -6,6 +6,7 @@ const privateKey = process.env.WALLET_PRIVATE_KEY;
 const contractAddress = process.env.CONTRACT_ADDRESS;
 const secretClientKey = process.env.CONTRACT_CLIENT_SECRET_KEY;
 const clientId = process.env.CONTRACT_CLIENT_ID;
+
 const listenSDK = new ThirdwebSDK("binance-testnet", {
     secretKey: secretClientKey,
     clientId: clientId,
@@ -14,14 +15,12 @@ const writeSDK = ThirdwebSDK.fromPrivateKey(
     privateKey,
     "binance-testnet"
 );
-let contractListener, contractWriter;
-const initContractSDK = async () => {
-    contractListener = await listenSDK.getContract(contractAddress);
-    contractWriter = await writeSDK.getContract(contractAddress);
-};
+// let contractListener, contractWriter;
+
 
 const handleBlockchainEvent = async () => {
-    await initContractSDK();
+    const contractListener = await listenSDK.getContract(contractAddress);
+    const contractWriter = await writeSDK.getContract(contractAddress);
     const getLogForCheckout = async (roomId) => {
         const sampleData = await getLog(roomId);
         if (sampleData[0] === false) {
@@ -42,13 +41,14 @@ const handleBlockchainEvent = async () => {
         const roomId = parseInt(event.data.roomId._hex, 16);
         console.log('Token ID', tokenId);
         console.log('Room ID', roomId);
-        const logData = await getLogForCheckout(roomId);
+        const logData = (await getLogForCheckout(roomId)).slice(0, 100);
         if (logData) {
+            console.log('Log data:', logData);
             const encryptedData = CryptoJS_EncryptData(logData);
             const hashedData = CryptoJS_HashData(JSON.stringify(logData));
             // console.log('Encrypted data:', CryptoJS_EncryptData(logData));
             // console.log('Hashed data:', CryptoJS_HashData(JSON.stringify(logData)));
-            await contractWriter.call("sendData", [tokenId, encryptedData, hashedData]);
+            await contractWriter.call("sendData", [event.data.tokenId, encryptedData, hashedData]);
         }
         else {
             console.log("No data found to checkout.");
@@ -71,8 +71,7 @@ const handleBlockchainEvent = async () => {
         //     console.log("----------");
         // });
     });
-
-
-
 }
 module.exports = handleBlockchainEvent;
+
+
