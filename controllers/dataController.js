@@ -2,7 +2,7 @@ const Data = require('../models/dataModel');
 const Topic = require('../models/topicModel');
 // Get all data from topic
 const { Op, literal } = require("sequelize");
-const { publishData } = require('../services/mqtt');
+const { publishData, publishToMqtt } = require('../services/mqtt');
 const Device = require('../models/deviceModel');
 const { EthCrypto_EncryptData, EthCrypto_DecryptData } = require('../services/dataHandler');
 
@@ -171,6 +171,21 @@ const createData = async (req, res) => {
         }
         if (topicData.TopicName === 'light') {
             await publishData('LIGHT-CONTROL', value);
+        }
+        else if (topicData.TopicName.substring(0, 6) === 'socket') {
+            const socketIndex = parseInt(topicData.TopicName.substring(7)) - 1;
+            const prepareJson = {
+                type: 'command',
+                data: [
+                    {
+                        deviceName: 'RELAY',
+                        roomId: "1",
+                        action: parseInt(value) === 1 ? 'ON' : 'OFF',
+                        index: socketIndex.toString(),
+                    }
+                ]
+            };
+            await publishToMqtt(JSON.stringify(prepareJson));
         }
 
         // Find the device belongs to the topic
