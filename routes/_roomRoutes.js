@@ -11,6 +11,6 @@ router.get("/:id", roomController.getRoomById);
 router.post("/create", roomController.createRoom);
 router.put("/:id/update", roomController.updateRoomData);
 router.put("/rfid/register", roomController.registerRfid);
-router.post("/rfid/scan", roomController.scanRfid);
+router.put("/rfid/scan", roomController.scanRfid);
 
 module.exports = router;

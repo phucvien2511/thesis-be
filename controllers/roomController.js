@@ -1,6 +1,7 @@
 const Room = require('../models/roomModel');
 const { publishData, publishToMqtt } = require('../services/mqtt');
 const myEvent = require('../services/eventGenerator');
+const { storeData } = require('../middlewares/storeData');
 const createRoom = async (req, res) => {
     const { name, accessKey, description, status } = req.body;
     try {
@@ -96,21 +97,16 @@ const registerRfid = async (req, res) => {
         }
         publishToMqtt(JSON.stringify(prepareJson));
         // waiting for emit room_access_response
-        // Wrap the event listener in a Promise
         let resultPromise = new Promise((resolve, reject) => {
             myEvent.once('room_access_response', (value) => {
                 console.log('Room access event:', value);
-                resolve(value);  // Resolve the Promise with the value
+                resolve(value);
             });
 
         });
         // myEvent.removeAllListeners('room_access_response');
-        // Wait for the Promise to resolve with the result
         let result = await resultPromise;
-
-        // Now you can check the result and update the room
         if (result === 1) {
-            // Update ownerId in room
             await room.update({
                 AccessKey: ownerId,
             });
@@ -126,7 +122,7 @@ const registerRfid = async (req, res) => {
 }
 
 const scanRfid = async (req, res) => {
-    const { roomId } = req.body;
+    const { roomId, value } = req.body;
     try {
         const room = await Room.findByPk(roomId);
         if (!room) {
@@ -146,35 +142,23 @@ const scanRfid = async (req, res) => {
                 {
                     deviceName: "RFID",
                     roomId: roomId,
-                    action: "SCAN_RFID_CARD",
+                    action: "READ_RFID_CARD",
+                    value: value,
                 }
             ]
         }
         publishToMqtt(JSON.stringify(prepareJson));
+        // waiting for emit room_access_response
+        let resultPromise = new Promise((resolve, reject) => {
+            myEvent.once('auth_access_response', (value) => {
+                resolve(value);
+            });
 
-        // //Delay 10 seconds to wait for response
-        // setTimeout(() => {
-        //     // Remove listener
-        //     myEvent.removeAllListeners('room-access');
-        //     if (result === -1) {
-        //         res.status(200).json({ data: result, message: "No card scanned" });
-        //     }
-        // }, 10000);
-        // let timeout;
-        // const handleResponse = (value) => {
-        //     clearTimeout(timeout); // Clear the timeout when the response is received
-        //     result = value;
-        //     console.log('Room access event:', value);
-        //     res.status(200).json({ data: result, message: 'Success' });
-        // };
-
-        // myEvent.on('room-access', handleResponse);
-
-        // timeout = setTimeout(() => {
-        //     myEvent.removeListener('room-access', handleResponse); // Remove the event listener
-        //     console.log('Timeout reached');
-        //     res.status(500).json({ error: 'Timeout reached' });
-        // }, 10000);
+        });
+        // myEvent.removeAllListeners('room_access_response');
+        let result = await resultPromise;
+        storeData('room-access', result);
+        res.status(200).json({ data: { result }, message: "Success" });
     }
     catch (error) {
         console.error(error);

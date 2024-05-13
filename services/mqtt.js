@@ -56,6 +56,9 @@ const startConnection = () => {
                 if (item.to === 'room_access_key') {
                     myEvent.emit('room_access_response', item.status);
                 }
+                else if (item.to === 'auth_access') {
+                    myEvent.emit('auth_access_response', item.status);
+                }
             });
         }
         // receivedMessage.forEach(dataItem => {
