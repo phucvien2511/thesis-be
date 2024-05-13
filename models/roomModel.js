@@ -21,10 +21,13 @@ const Room = db.define('Room', {
         allowNull: false,
         defaultValue: 'AVAILABLE',
     },
-    AccessKey: {
-        type: DataTypes.STRING(100),
+    RoomOwner: {
+        type: DataTypes.STRING(128),
         allowNull: true,
-        unique: 'accessKey',
+    },
+    AccessKey: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
     },
     RoomDescription: {
         type: DataTypes.STRING(255),
