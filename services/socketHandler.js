@@ -6,11 +6,10 @@ module.exports = (io, socket) => {
         myEvent.removeAllListeners('receive_data');
     };
     const handleReceiveData = data => {
-        console.log('-> SOCKET: Data received: ' + data + '.');
+        console.log('-> SOCKET: Data received: ' + data.topic + ' ' + data.value + '.');
         io.emit('receive_data', data.topic, data.value, Date.now());
     }
     myEvent.on('receive_data', handleReceiveData);
-
 
     // socket.on('receive_data', handleReceiveData);
     socket.on('disconnect', handleDisconnect);

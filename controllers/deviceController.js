@@ -47,7 +47,6 @@ const getDeviceById = async (req, res) => {
 
 //Create device
 const createDevice = async (req, res) => {
-    // const { id, name, type, status, description, productionDate } = req.body;
     const { id, name, code, topics } = req.body;
     try {
         // Create devices with different topicID

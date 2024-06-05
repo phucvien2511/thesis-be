@@ -33,6 +33,10 @@ const Room = db.define('Room', {
         type: DataTypes.STRING(255),
         allowNull: true,
     },
+    RentDuration: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt

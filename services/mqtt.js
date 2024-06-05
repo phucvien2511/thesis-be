@@ -34,19 +34,19 @@ const startConnection = () => {
             // console.log('Retain message:', message.toString());
             return; // Skip saving first message (retain message)
         }
+        let date = new Date(Date.now());
+        let hours = date.getHours().toString();
+        let minutes = date.getMinutes().toString();
+        let seconds = date.getSeconds().toString();
+        let milliseconds = date.getMilliseconds().toString();
 
         let receivedMessage = JSON.parse(message.toString());
         console.log('-> Received message from topic: ', message.toString());
-        // if (!Array.isArray(receivedMessage)) {
-        //     // Make it into an array
-        //     receivedMessage = [receivedMessage];
-        // }
+        console.log('At time: ', `${hours}:${minutes}:${seconds}.${milliseconds}`);
 
         if (receivedMessage.type === 'publish') {
-            //console.log('-> Received data array: ', receivedMessage.data);
             receivedMessage.data.forEach(item => {
                 const { topic, value } = item;
-                //console.log('-> Received data: ', { topic, value })
                 storeData(topic, value);
                 myEvent.emit('receive_data', { topic, value });
             });
@@ -58,6 +58,16 @@ const startConnection = () => {
                 }
                 else if (item.to === 'auth_access') {
                     myEvent.emit('auth_access_response', item.status);
+                }
+            });
+        }
+        else if (receivedMessage.type === 'command') {
+            receivedMessage.data.forEach(item => {
+                const { deviceName, roomId, action, index } = item;
+                if (deviceName === 'RELAY') {
+                    const socketTopic = 'socket-' + (parseInt(index) + 1).toString();
+                    const socketValue = action === 'ON' ? 1 : 0;
+                    myEvent.emit('receive_data', { topic: socketTopic, value: socketValue });
                 }
             });
         }

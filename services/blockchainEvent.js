@@ -1,4 +1,4 @@
-const { ThirdwebSDK, encodeConstructorParamsForImplementation } = require("@thirdweb-dev/sdk");
+const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { CryptoJS_HashData, getLog, CryptoJS_EncryptData } = require("./dataHandler");
 const Room = require("../models/roomModel");
 require('dotenv').config();
@@ -85,7 +85,7 @@ const handleBlockchainEvent = async () => {
         const roomId = parseInt(event.data.roomId._hex, 16);
         console.log('-> Checkout: Token ID', tokenId);
         console.log('-> Checkout: Room ID', roomId);
-        const logData = (await getLogForCheckout(roomId)).slice(0, 100);
+        const logData = (await getLogForCheckout(roomId));
         if (logData) {
             console.log('Log data:', logData);
             const encryptedData = CryptoJS_EncryptData(logData);

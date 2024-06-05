@@ -64,24 +64,44 @@ const getLog = async (roomId) => {
         for (const topic of topics) {
             const devices = await Device.findAll({
                 where: {
+
                     TopicID: topic.TopicID,
                 },
             });
 
             for (const device of devices) {
-                const resData = await Data.findAll({
-                    where: {
-                        DeviceCode: device.DeviceCode,
-                    },
-                });
+                if ([8].includes(device.DeviceCode)) {
+                    const resData = await Data.findOne({
+                        where: {
+                            DeviceCode: device.DeviceCode,
+                        },
+                        order: [['createdAt', 'DESC']]
+                    });
 
-                if (resData) {
-                    for (const item of resData) {
-                        const decryptedData = await EthCrypto_DecryptData(item.Value);
+                    if (resData) {
+
+                        const decryptedData = await EthCrypto_DecryptData(resData.Value);
                         resultData.push(decryptedData);
                         // console.log('Result Data', resultData);
+
                     }
                 }
+                if ([7].includes(device.DeviceCode)) {
+                    const resData = await Data.findAll({
+                        where: {
+                            DeviceCode: device.DeviceCode,
+                        },
+                    });
+
+                    if (resData) {
+                        for (const item of resData) {
+                            const decryptedData = await EthCrypto_DecryptData(item.Value);
+                            resultData.push(decryptedData);
+                            // console.log('Result Data', resultData);
+                        }
+                    }
+                }
+
             }
         }
 
