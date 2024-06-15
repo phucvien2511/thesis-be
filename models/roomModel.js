@@ -3,41 +3,55 @@
 // Required libraries & files
 const { DataTypes } = require('sequelize');
 const db = require('../config/database');
-const Device = require('./deviceModel');
 const Topic = require('./topicModel');
 
 const Room = db.define('Room', {
-    id: {
+    RoomID: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    name: {
-        type: DataTypes.STRING(32),
+    RoomName: {
+        type: DataTypes.STRING(64),
         allowNull: false,
-        unique: 'name',
+        unique: 'roomName',
     },
-    status: {
+    RoomStatus: {
         type: DataTypes.ENUM('AVAILABLE', 'BOOKED', 'UNAVAILABLE'),
         allowNull: false,
         defaultValue: 'AVAILABLE',
     },
-    cardId: {
-        type: DataTypes.CHAR(8),
-        unique: 'cardId',
+    RoomOwner: {
+        type: DataTypes.STRING(128),
         allowNull: true,
-    }
+    },
+    AccessKey: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
+    },
+    RoomDescription: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+    },
+    RentDuration: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 }, {
     freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
     // paranoid: true          // Enable soft delete
 });
 
-// 1 room has many devices
-// Connect id to Device.roomId
-Room.hasMany(Device, {
-    foreignKey: 'roomId',
-    sourceKey: 'id',
+Room.hasMany(Topic, {
+    foreignKey: {
+        name: 'RoomID',
+    }
+});
+Topic.belongsTo(Room, {
+    foreignKey: {
+        name: 'RoomID',
+    }
 });
 
 module.exports = Room;

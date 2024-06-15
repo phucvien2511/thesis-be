@@ -1,5 +1,7 @@
 const Device = require('../models/deviceModel');
 const { Op } = require("sequelize");
+const Topic = require('../models/topicModel');
+const { id } = require('ethers/lib/utils');
 
 // Get all devices
 const getDevices = async (req, res) => {
@@ -45,15 +47,24 @@ const getDeviceById = async (req, res) => {
 
 //Create device
 const createDevice = async (req, res) => {
-    const { id, name, type, status, description, productionDate } = req.body;
+    const { id, name, code, topics } = req.body;
     try {
-        await Device.create({
-            id,
-            name,
-            type,
-            status,
-            description,
-            productionDate
+        // Create devices with different topicID
+        topics.forEach(async (topic, index) => {
+            const topicQuery = await Topic.findOne({
+                where: {
+                    TopicName: topic,
+                }
+            })
+            if (!topicQuery || !topics) {
+                return res.status(404).json({ message: `Topic not exists` });
+            }
+            await Device.create({
+                DeviceName: name,
+                DeviceID: id,
+                DeviceCode: code[index],
+                TopicID: topicQuery.TopicID
+            });
         });
         res.status(201).json({ message: "Success" });
     } catch (error) {
@@ -63,21 +74,26 @@ const createDevice = async (req, res) => {
 }
 
 // Update device
-const updateDevice = async (req, res) => {
+const updateDeviceData = async (req, res) => {
     const { id } = req.params;
-    const { name, type, status, description, productionDate, roomId } = req.body;
+    const { name, code, topic } = req.body;
     try {
         const device = await Device.findByPk(id); // Find by primary key
         if (!device) {
             return res.status(404).json({ message: "Device not found" });
         }
+        const topicQuery = await Topic.findOne({
+            where: {
+                TopicName: topic,
+            }
+        });
+        if (!topicQuery) {
+            return res.status(404).json({ message: `Topic ${topic} not exists` });
+        }
         await device.update({
-            name,
-            type,
-            status,
-            description,
-            productionDate,
-            roomId
+            DeviceName: name,
+            DeviceCode: code,
+            TopicID: topicQuery.TopicID
         });
         res.status(200).json({ message: "Success" });
     } catch (error) {
@@ -107,6 +123,6 @@ module.exports = {
     getDevices,
     getDeviceById,
     createDevice,
-    updateDevice,
+    updateDeviceData,
     deleteDevice
 };

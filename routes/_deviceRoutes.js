@@ -9,7 +9,7 @@ const deviceController = require('../controllers/deviceController');
 router.get("", deviceController.getDevices);
 router.get("/:id", deviceController.getDeviceById);
 router.post("/create", deviceController.createDevice);
-router.put("/update/:id", deviceController.updateDevice);
+router.put("/update/:id", deviceController.updateDeviceData);
 router.delete("/delete/:id", deviceController.deleteDevice);
 
 module.exports = router;

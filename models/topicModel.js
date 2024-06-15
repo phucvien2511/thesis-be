@@ -1,42 +1,45 @@
 'use strict'
 
 // Required libraries & files
-const { DataTypes, Model } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const db = require('../config/database');
-const Room = require('./roomModel');
+const Device = require('./deviceModel');
 
 const Topic = db.define('Topic', {
-    id: {
+    TopicID: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
     },
-    name: {
+    TopicName: {
         type: DataTypes.STRING(32),
         allowNull: false,
-        unique: 'name',
-
+        unique: 'topicName',
     },
-    description: {
-        type: DataTypes.STRING(128),
+    TopicDescription: {
+        type: DataTypes.STRING,
         allowNull: true,
     },
-    roomId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-    },
+    // roomId: {
+    //     type: DataTypes.INTEGER,
+    //     allowNull: true,
+    // },
 }, {
-    freezeTableName: true,  // Force table name = model name
+    // freezeTableName: true,  // Force table name = model name
     timestamps: true,       // Enable createdAt and updatedAt
     // paranoid: true          // Enable soft delete
 });
 
-// 1 topic belong to 1 room
-Topic.belongsTo(Room, {
-    foreignKey: 'roomId',
-});
+Topic.hasMany(Device, {
+    foreignKey: {
+        name: 'TopicID',
+    },
 
-// Sync table
-//Topic.sync({ alter: true });
+});
+Device.belongsTo(Topic, {
+    foreignKey: {
+        name: 'TopicID',
+    },
+});
 
 module.exports = Topic;

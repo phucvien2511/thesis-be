@@ -1,13 +1,23 @@
 const Room = require('../models/roomModel');
-const { publishData } = require('../services/mqtt');
+const { publishData, publishToMqtt } = require('../services/mqtt');
 const myEvent = require('../services/eventGenerator');
+const { storeData } = require('../middlewares/storeData');
 const createRoom = async (req, res) => {
-    const { id, name, description } = req.body;
+    const { name, accessKey, description, status } = req.body;
     try {
+        const room = await Room.findOne({
+            where: {
+                RoomName: name
+            }
+        });
+        if (room) {
+            return res.status(400).json({ message: "Room already exists" });
+        }
         await Room.create({
-            id,
-            name,
-            description
+            RoomName: name,
+            AccessKey: accessKey,
+            RoomDescription: description,
+            RoomStatus: status
         });
         res.status(201).json({ message: "Success" });
     } catch (error) {
@@ -15,13 +25,26 @@ const createRoom = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
-
+const getRooms = async (req, res) => {
+    const { status } = req.query;
+    try {
+        const rooms = await Room.findAll();
+        if (status) {
+            const filterRooms = rooms.filter((room) => room.RoomStatus.toLowerCase() === status.toLowerCase());
+            return res.status(200).json({ data: filterRooms, message: "Success" });
+        }
+        res.status(200).json({ data: rooms, message: "Success" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+};
 const getRoomById = async (req, res) => {
     const { id } = req.params;
     try {
         const room = await Room.findOne({
             where: {
-                id
+                RoomID: id,
             }
         });
         if (!room) {
@@ -34,18 +57,18 @@ const getRoomById = async (req, res) => {
     }
 };
 
-const updateRoom = async (req, res) => {
+const updateRoomData = async (req, res) => {
     const { id } = req.params;
-    const { name, description, cardId } = req.body;
+    const { name, accessKey, description } = req.body;
     try {
         const room = await Room.findByPk(id); // Find by primary key
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
         await room.update({
-            name,
-            description,
-            cardId
+            RoomName: name,
+            AccessKey: accessKey,
+            RoomDescription: description,
         });
         res.status(200).json({ message: "Success" });
     } catch (error) {
@@ -54,8 +77,52 @@ const updateRoom = async (req, res) => {
     }
 };
 
-const scanningRfid = async (req, res) => {
-    const { roomId } = req.body;
+const registerRfid = async (req, res) => {
+    const { roomId, ownerId } = req.body;
+    try {
+        const room = await Room.findByPk(roomId);
+        if (!room) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        const prepareJson = {
+            type: 'command',
+            data: [
+                {
+                    deviceName: "RFID",
+                    roomId: roomId,
+                    action: "WRITE_RFID_CARD",
+                    value: ownerId
+                }
+            ]
+        }
+        publishToMqtt(JSON.stringify(prepareJson));
+        // waiting for emit room_access_response
+        let resultPromise = new Promise((resolve, reject) => {
+            myEvent.once('room_access_response', (value) => {
+                console.log('Room access event:', value);
+                resolve(value);
+            });
+
+        });
+        // myEvent.removeAllListeners('room_access_response');
+        let result = await resultPromise;
+        if (result === 1) {
+            await room.update({
+                AccessKey: ownerId,
+            });
+        }
+
+        res.status(200).json({ data: { result }, message: "Success" });
+
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+}
+
+const scanRfid = async (req, res) => {
+    const { roomId, value } = req.body;
     try {
         const room = await Room.findByPk(roomId);
         if (!room) {
@@ -69,38 +136,29 @@ const scanningRfid = async (req, res) => {
         //     'module': 'rfid',
         //     'cardId': cardId
         // });
-        publishData('SCAN-RFID', cardId);
-        let result = -1;
-        // // Know when there is a response from mqtt
-        myEvent.once('room-access', (value) => {
-            result = value;
-            console.log('Room access event: ', value);
-            res.status(200).json({ data: result, message: "Success" });
+        const prepareJson = {
+            type: 'command',
+            data: [
+                {
+                    deviceName: "RFID",
+                    roomId: roomId,
+                    action: "READ_RFID_CARD",
+                    value: value,
+                }
+            ]
+        }
+        publishToMqtt(JSON.stringify(prepareJson));
+        // waiting for emit room_access_response
+        let resultPromise = new Promise((resolve, reject) => {
+            myEvent.once('auth_access_response', (value) => {
+                resolve(value);
+            });
 
         });
-        // //Delay 10 seconds to wait for response
-        // setTimeout(() => {
-        //     // Remove listener
-        //     myEvent.removeAllListeners('room-access');
-        //     if (result === -1) {
-        //         res.status(200).json({ data: result, message: "No card scanned" });
-        //     }
-        // }, 10000);
-        // let timeout;
-        // const handleResponse = (value) => {
-        //     clearTimeout(timeout); // Clear the timeout when the response is received
-        //     result = value;
-        //     console.log('Room access event:', value);
-        //     res.status(200).json({ data: result, message: 'Success' });
-        // };
-
-        // myEvent.on('room-access', handleResponse);
-
-        // timeout = setTimeout(() => {
-        //     myEvent.removeListener('room-access', handleResponse); // Remove the event listener
-        //     console.log('Timeout reached');
-        //     res.status(500).json({ error: 'Timeout reached' });
-        // }, 10000);
+        // myEvent.removeAllListeners('room_access_response');
+        let result = await resultPromise;
+        storeData('room-access', result);
+        res.status(200).json({ data: { result }, message: "Success" });
     }
     catch (error) {
         console.error(error);
@@ -110,7 +168,9 @@ const scanningRfid = async (req, res) => {
 
 module.exports = {
     createRoom,
+    getRooms,
     getRoomById,
-    updateRoom,
-    scanningRfid
+    updateRoomData,
+    registerRfid,
+    scanRfid
 };
